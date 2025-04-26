@@ -1,0 +1,23 @@
+{
+  "name": "oraculoligafantasy",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mredaht/OraculoLigaFantasy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mredaht/OraculoLigaFantasy/issues"
+  },
+  "homepage": "https://github.com/mredaht/OraculoLigaFantasy#readme",
+  "description": "",
+  "dependencies": {
+    "ethers": "^6.13.7"
+  }
+}
