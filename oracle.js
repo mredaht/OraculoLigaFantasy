@@ -58,7 +58,7 @@ async function pushStat(p) {
         nonce
     });
 
-    console.log(`✅ Jugador ${p.id} → Tx ${receipt.transactionHash}`);
+    console.log(` Jugador ${p.id} → Tx ${receipt.transactionHash}`);
 }
 
 // ─── MAIN LOOP ────────────────────────────────────────────
@@ -69,7 +69,7 @@ async function pushStat(p) {
         try {
             await pushStat(p);
         } catch (err) {
-            console.error(`⚠️  Error con id ${p.id}: ${err.message}`);
+            console.error(`  Error con id ${p.id}: ${err.message}`);
         }
     }
     process.exit(0);
