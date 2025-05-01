@@ -22,7 +22,7 @@ const league = new web3.eth.Contract(
 );
 
 // ── Utils ────────────────────────────────────────────────
-const GAS_LIMIT = 250_000;                // margen holgado
+const GAS_LIMIT = 500_000;                // margen holgado
 const CONCURRENCY = 5;                    // 5 tx simultáneas
 const STATS_FILE = "./stats.json";
 
