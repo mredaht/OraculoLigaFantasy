@@ -30,7 +30,7 @@
         "ganoPartido": true
     },
     {
-        "id": 11,
+        "id": 2,
         "name": "Bellingham",
         "team": "Real Madrid",
         "goles": 3,
@@ -45,7 +45,7 @@
         "ganoPartido": false
     },
     {
-        "id": 12,
+        "id": 3,
         "name": "Vinicius",
         "team": "Real Madrid",
         "goles": 0,

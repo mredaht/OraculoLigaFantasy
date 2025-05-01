@@ -38,14 +38,19 @@ async function sendStat(p, nonce) {
     );
 
     const encoded = tx.encodeABI();
+    const block = await web3.eth.getBlock("pending");
+    const base = BigInt(block.baseFeePerGas);       // baseFee actual
+    const tip = 2n * 10n ** 9n;                      // 2 gwei
+    const maxFee = base * 2n + tip;                   // 2× baseFee + tip
 
     const txData = {
         from: acct.address,
         to: league.options.address,
         gas: GAS_LIMIT,
+        maxPriorityFeePerGas: tip.toString(),
+        maxFeePerGas: maxFee.toString(),
         nonce,
-        data: encoded,
-        gas: GAS_LIMIT
+        data: encoded
     };
 
     return retry(async () => {
