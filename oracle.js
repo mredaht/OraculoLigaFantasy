@@ -4,7 +4,8 @@ import fs from "fs";
 import Web3 from "web3";
 import retry from "async-retry";
 import pLimit from "p-limit";
-import leagueAbi from "./artifacts/FantasyLeague.sol/FantasyLeague.json" assert { type: "json" };
+
+const leagueAbi = require("./FantasyLeagueABI.json");
 
 function env(name) {
     const v = process.env[name];
@@ -18,7 +19,7 @@ web3.eth.accounts.wallet.add(acct);
 
 const league = new web3.eth.Contract(
     leagueAbi.abi,
-    env("LEAGUE_ADDRESS")
+    process.env.LEAGUE_ADDRESS
 );
 
 // ── Utils ────────────────────────────────────────────────
