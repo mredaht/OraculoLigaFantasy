@@ -1,11 +1,10 @@
 // oracle.js
 import "dotenv/config";
-import fs from "fs";
 import Web3 from "web3";
+import fs from "fs";
 import retry from "async-retry";
 import pLimit from "p-limit";
-
-const leagueAbi = require("./FantasyLeagueABI.json");
+import leagueAbi from "./FantasyLeagueABI.json" with { type: "json" };
 
 function env(name) {
     const v = process.env[name];
@@ -46,8 +45,7 @@ async function sendStat(p, nonce) {
         gas: GAS_LIMIT,
         nonce,
         data: encoded,
-        maxPriorityFeePerGas: web3.utils.toWei("2", "gwei"),  // EIP-1559 ejemplo
-        maxFeePerGas: web3.utils.toWei("40", "gwei")
+        gas: GAS_LIMIT
     };
 
     return retry(async () => {
