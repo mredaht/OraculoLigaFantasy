@@ -1,76 +1,73 @@
 // oracle.js
-require("dotenv").config();
-const Web3 = require("web3");
-const fs = require("fs");
+import "dotenv/config";
+import fs from "fs";
+import Web3 from "web3";
+import retry from "async-retry";
+import pLimit from "p-limit";
+import leagueAbi from "./artifacts/FantasyLeague.sol/FantasyLeague.json" assert { type: "json" };
 
-// ─── CONFIG ────────────────────────────────────────────────
-const STATS_FILE = "./stats.json";                  // ← tu JSON
-const web3 = new Web3(process.env.RPC_URL);
-const acct = web3.eth.accounts.privateKeyToAccount(process.env.ORACLE_PRIVATE_KEY);
+function env(name) {
+    const v = process.env[name];
+    if (!v) throw new Error(`Falta ${name} en .env`);
+    return v;
+}
+
+const web3 = new Web3(env("RPC_URL"));
+const acct = web3.eth.accounts.privateKeyToAccount(env("ORACLE_PRIVATE_KEY"));
 web3.eth.accounts.wallet.add(acct);
 
-const leagueAbi = require("./FantasyLeague.json"); // ABI exportado de Etherscan
-const league = new web3.eth.Contract(leagueAbi, process.env.LEAGUE_ADDRESS);
+const league = new web3.eth.Contract(
+    leagueAbi.abi,
+    env("LEAGUE_ADDRESS")
+);
 
-// ─── CARGAR STATS DESDE EL JSON ───────────────────────────
+// ── Utils ────────────────────────────────────────────────
+const GAS_LIMIT = 250_000;                // margen holgado
+const CONCURRENCY = 5;                    // 5 tx simultáneas
+const STATS_FILE = "./stats.json";
+
 function loadStats() {
-    const raw = fs.readFileSync(STATS_FILE, "utf-8");
-    const stats = JSON.parse(raw);
-
-    // Normalizar claves (algunas entradas usan nombre/equipo)
-    return stats.map(p => ({
-        id: p.id,
-        goles: p.goles,
-        asistencias: p.asistencias,
-        paradas: p.paradas,
-        penaltisParados: p.penaltisParados,
-        despejes: p.despejes,
-        minutosJugados: p.minutosJugados,
-        porteriaCero: p.porteriaCero,
-        tarjetasAmarillas: p.tarjetasAmarillas,
-        tarjetasRojas: p.tarjetasRojas,
-        ganoPartido: p.ganoPartido
-    }));
+    return JSON.parse(fs.readFileSync(STATS_FILE, "utf-8"));
 }
 
-// ─── PUBLICAR UNA ACTUALIZACIÓN ───────────────────────────
-async function pushStat(p) {
+async function sendStat(p, nonce) {
     const tx = league.methods.actualizarEstadisticas(
-        p.id,
-        p.goles,
-        p.asistencias,
-        p.paradas,
-        p.penaltisParados,
-        p.despejes,
-        p.minutosJugados,
-        p.porteriaCero,
-        p.tarjetasAmarillas,
-        p.tarjetasRojas,
-        p.ganoPartido
+        p.id, p.goles, p.asistencias, p.paradas, p.penaltisParados,
+        p.despejes, p.minutosJugados, p.porteriaCero,
+        p.tarjetasAmarillas, p.tarjetasRojas, p.ganoPartido
     );
 
-    const gas = await tx.estimateGas({ from: acct.address });
-    const nonce = await web3.eth.getTransactionCount(acct.address);
+    const encoded = tx.encodeABI();
 
-    const receipt = await tx.send({
+    const txData = {
         from: acct.address,
-        gas,
-        nonce
-    });
+        to: league.options.address,
+        gas: GAS_LIMIT,
+        nonce,
+        data: encoded,
+        maxPriorityFeePerGas: web3.utils.toWei("2", "gwei"),  // EIP-1559 ejemplo
+        maxFeePerGas: web3.utils.toWei("40", "gwei")
+    };
 
-    console.log(` Jugador ${p.id} → Tx ${receipt.transactionHash}`);
+    return retry(async () => {
+        const signed = await acct.signTransaction(txData);
+        return web3.eth.sendSignedTransaction(signed.rawTransaction);
+    }, {
+        retries: 3,
+        onRetry: (e, i) => console.log(`Reintentando id ${p.id} (${i})`),
+    });
 }
 
-// ─── MAIN LOOP ────────────────────────────────────────────
+// ── Main ─────────────────────────────────────────────────
 (async () => {
-    const players = loadStats();
+    const stats = loadStats();
+    const limit = pLimit(CONCURRENCY);
+    let nonce = await web3.eth.getTransactionCount(acct.address, "pending");
 
-    for (const p of players) {
-        try {
-            await pushStat(p);
-        } catch (err) {
-            console.error(`  Error con id ${p.id}: ${err.message}`);
-        }
+    const tasks = stats.map(p => limit(() => sendStat(p, nonce++)));
+
+    for await (const rcpt of tasks) {
+        console.log(`tx ${rcpt.transactionHash} incluida`);
     }
     process.exit(0);
 })();
