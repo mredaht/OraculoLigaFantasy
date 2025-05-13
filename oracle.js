@@ -20,7 +20,7 @@ const league = new web3.eth.Contract(leagueAbi.abi, env("LEAGUE_ADDRESS"));
 
 // ── parámetros ───────────────────────────────────────────
 const GAS_LIMIT = 500_000;
-const CONCURRENCY = 5;
+const CONCURRENCY = 1;
 const STATS_FILE = "./stats.json";
 
 function loadStats() {
