@@ -1,4 +1,4 @@
-// oracle.js  (añadidos ▶️)
+// oracle.js  
 
 import "dotenv/config";
 import Web3 from "web3";
@@ -27,7 +27,7 @@ function loadStats() {
     return JSON.parse(fs.readFileSync(STATS_FILE, "utf-8"));
 }
 
-// ▶️ globals para métricas
+// globals para métricas
 let active = 0;
 let totalGas = 0n;
 let latencies = [];
@@ -57,16 +57,16 @@ async function sendStat(p, nonce) {
     };
 
     return retry(async () => {
-        const start = Date.now();          // ▶️ tiempo de envío
+        const start = Date.now();          //  tiempo de envío
         const signed = await acct.signTransaction(txData);
         const rcpt = await web3.eth.sendSignedTransaction(signed.rawTransaction);
         const latency = Date.now() - start;
 
-        // ▶️ recopilar métricas
+        // recopilar métricas
         totalGas += BigInt(rcpt.gasUsed);
         latencies.push(latency);
 
-        console.log(`✓ id ${p.id}  gas=${rcpt.gasUsed}  ${latency} ms  (in-flight ${--active})`);
+        console.log(`id ${p.id}  gas=${rcpt.gasUsed}  ${latency} ms  (in-flight ${--active})`);
         return rcpt;
     }, {
         retries: 3,
@@ -80,7 +80,7 @@ async function sendStat(p, nonce) {
     const limit = pLimit(CONCURRENCY);
     let nonce = await web3.eth.getTransactionCount(acct.address, "pending");
 
-    console.time("batch");               // ▶️ duración total
+    console.time("batch");               // duración total
 
     const tasks = stats.map(p => limit(async () => {
         console.log(`→ id ${p.id}  (in-flight ${++active})`);
@@ -90,7 +90,7 @@ async function sendStat(p, nonce) {
     await Promise.all(tasks);
     console.timeEnd("batch");
 
-    // ▶️ resumen final
+    // resumen final
     const avgGas = Number(totalGas) / stats.length;
     const avgLatency = latencies.reduce((a, b) => a + b, 0) / stats.length;
 
