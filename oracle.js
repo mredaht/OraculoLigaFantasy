@@ -4,7 +4,6 @@ import "dotenv/config";
 import Web3 from "web3";
 import fs from "fs";
 import retry from "async-retry";
-import pLimit from "p-limit";
 import leagueAbi from "./FantasyLeagueABI.json" with { type: "json" };
 
 function env(name) {
@@ -20,7 +19,6 @@ const league = new web3.eth.Contract(leagueAbi.abi, env("LEAGUE_ADDRESS"));
 
 // ── parámetros ───────────────────────────────────────────
 const GAS_LIMIT = 500_000;
-const CONCURRENCY = 1;
 const STATS_FILE = "./stats.json";
 
 function loadStats() {
@@ -28,11 +26,9 @@ function loadStats() {
 }
 
 // globals para métricas
-let active = 0;
 let totalGas = 0n;
 let latencies = [];
 
-// ── envío ────────────────────────────────────────────────
 async function sendStat(p, nonce) {
     const tx = league.methods.actualizarEstadisticas(
         p.id, p.goles, p.asistencias, p.paradas, p.penaltisParados,
@@ -57,16 +53,15 @@ async function sendStat(p, nonce) {
     };
 
     return retry(async () => {
-        const start = Date.now();          //  tiempo de envío
+        const start = Date.now();
         const signed = await acct.signTransaction(txData);
         const rcpt = await web3.eth.sendSignedTransaction(signed.rawTransaction);
         const latency = Date.now() - start;
 
-        // recopilar métricas
         totalGas += BigInt(rcpt.gasUsed);
         latencies.push(latency);
 
-        console.log(`id ${p.id}  gas=${rcpt.gasUsed}  ${latency} ms  (in-flight ${--active})`);
+        console.log(`id ${p.id}  gas=${rcpt.gasUsed}  ${latency} ms`);
         return rcpt;
     }, {
         retries: 3,
@@ -77,20 +72,17 @@ async function sendStat(p, nonce) {
 // ── Main ─────────────────────────────────────────────────
 (async () => {
     const stats = loadStats();
-    const limit = pLimit(CONCURRENCY);
     let nonce = await web3.eth.getTransactionCount(acct.address, "pending");
 
-    console.time("batch");               // duración total
+    console.time("batch");
 
-    const tasks = stats.map(p => limit(async () => {
-        console.log(`→ id ${p.id}  (in-flight ${++active})`);
-        return sendStat(p, nonce++);
-    }));
+    for (const p of stats) {
+        console.log(`→ id ${p.id}`);
+        await sendStat(p, nonce++);
+    }
 
-    await Promise.all(tasks);
     console.timeEnd("batch");
 
-    // resumen final
     const avgGas = Number(totalGas) / stats.length;
     const avgLatency = latencies.reduce((a, b) => a + b, 0) / stats.length;
 
