@@ -19,7 +19,7 @@ const league = new web3.eth.Contract(leagueAbi.abi, env("LEAGUE_ADDRESS"));
 
 // ── parámetros ───────────────────────────────────────────
 const GAS_LIMIT = 500_000;
-const STATS_FILE = "./stats.json";
+const STATS_FILE = "./statsCompleto.json";
 
 function loadStats() {
     return JSON.parse(fs.readFileSync(STATS_FILE, "utf-8"));

@@ -1963,20 +1963,5 @@
         "tarjetasAmarillas": 0,
         "tarjetasRojas": 0,
         "ganoPartido": false
-    },
-    {
-        "id": 129,
-        "name": "Sylla",
-        "team": "Valladolid",
-        "goles": 0,
-        "asistencias": 1,
-        "paradas": 0,
-        "penaltisParados": 1,
-        "despejes": 7,
-        "minutosJugados": 0,
-        "porteriaCero": true,
-        "tarjetasAmarillas": 2,
-        "tarjetasRojas": 0,
-        "ganoPartido": true
     }
 ]
